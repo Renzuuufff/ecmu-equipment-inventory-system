@@ -1,0 +1,1 @@
+# ecmu-equipment-inventory-system
