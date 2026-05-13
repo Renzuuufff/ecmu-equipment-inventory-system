@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECMU Equipment Inventory System</title>
+  <link rel="stylesheet" href="styles.css" />
+  <meta name="theme-color" content="#0f766e" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand-block">
+      <div class="logo-mark">ECMU</div>
+      <div>
+        <p class="eyebrow">Electronics & Communication Maintenance Unit</p>
+        <h1>Equipment Inventory System</h1>
+        <p class="subhead">Track equipment description, project source, serial number, assigned location, condition, and photos.</p>
+      </div>
+    </div>
+    <div class="header-actions no-print">
+      <button id="btnAdd" class="btn primary">+ Add Equipment</button>
+      <button id="btnPrint" class="btn ghost">Print</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="notice no-print" id="storageNotice">
+      <strong>Deployment note:</strong> This Netlify-ready version saves inventory records in this browser using IndexedDB. Use Export JSON for backup/transfer. For multi-user shared access, connect this app to Supabase/Firebase later.
+      <button id="closeNotice" aria-label="Close notice">×</button>
+    </section>
+
+    <section class="stats-grid" aria-label="Inventory summary">
+      <article class="stat-card">
+        <span>Total Equipment</span>
+        <strong id="statTotal">0</strong>
+      </article>
+      <article class="stat-card good">
+        <span>Operational</span>
+        <strong id="statOperational">0</strong>
+      </article>
+      <article class="stat-card warning">
+        <span>For Repair / Calibration</span>
+        <strong id="statRepair">0</strong>
+      </article>
+      <article class="stat-card muted">
+        <span>Retired / Missing</span>
+        <strong id="statRetired">0</strong>
+      </article>
+    </section>
+
+    <section class="toolbar no-print" aria-label="Search and filters">
+      <div class="search-box">
+        <label for="searchInput">Search</label>
+        <input id="searchInput" type="search" placeholder="Search name, serial no., project, location, description..." />
+      </div>
+      <div class="filter-box">
+        <label for="categoryFilter">Category</label>
+        <select id="categoryFilter">
+          <option value="">All categories</option>
+        </select>
+      </div>
+      <div class="filter-box">
+        <label for="statusFilter">Status</label>
+        <select id="statusFilter">
+          <option value="">All status</option>
+          <option>Operational</option>
+          <option>Standby</option>
+          <option>For Repair</option>
+          <option>For Calibration</option>
+          <option>Missing</option>
+          <option>Retired</option>
+        </select>
+      </div>
+      <div class="toolbar-buttons">
+        <button id="btnExportCsv" class="btn secondary">Export CSV</button>
+        <button id="btnExportJson" class="btn secondary">Backup JSON</button>
+        <label class="btn secondary file-label" for="jsonImport">Import JSON</label>
+        <input id="jsonImport" class="hidden-file" type="file" accept="application/json" />
+      </div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-heading">
+        <div>
+          <h2>Inventory Records</h2>
+          <p id="recordCounter">Showing 0 record(s)</p>
+        </div>
+        <button id="btnSample" class="btn ghost no-print">Load Sample Records</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Photo</th>
+              <th>Equipment</th>
+              <th>Project Source</th>
+              <th>Serial No.</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th class="no-print">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryBody">
+            <tr>
+              <td colspan="7" class="empty-state">No inventory records yet. Click “Add Equipment” to begin.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="equipmentDialog" class="modal">
+    <form id="equipmentForm" method="dialog" class="modal-card">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Inventory Record</p>
+          <h2 id="formTitle">Add Equipment</h2>
+        </div>
+        <button type="button" class="icon-btn" id="btnCloseDialog" aria-label="Close">×</button>
+      </div>
+
+      <input type="hidden" id="recordId" />
+
+      <div class="form-grid">
+        <label>
+          Equipment ID / Code
+          <input id="equipmentCode" type="text" placeholder="e.g., ECMU-CCTV-001" />
+        </label>
+        <label>
+          Equipment Name <span class="required">*</span>
+          <input id="equipmentName" type="text" required placeholder="e.g., PTZ Camera" />
+        </label>
+        <label>
+          Category
+          <input id="category" type="text" list="categoryList" placeholder="e.g., CCTV, Radio, AWS, Server" />
+          <datalist id="categoryList">
+            <option>CCTV</option>
+            <option>Warning Station</option>
+            <option>Rain Gauge</option>
+            <option>Water Level Station</option>
+            <option>Automated Weather Station</option>
+            <option>VHF Radio</option>
+            <option>Server / Network</option>
+            <option>Solar Power System</option>
+            <option>Structural Health Monitoring</option>
+            <option>Tools and Test Equipment</option>
+          </datalist>
+        </label>
+        <label>
+          Brand / Model
+          <input id="brandModel" type="text" placeholder="Brand and exact model" />
+        </label>
+        <label>
+          Serial Number <span class="required">*</span>
+          <input id="serialNumber" type="text" required placeholder="Equipment serial number" />
+        </label>
+        <label>
+          Property No. / Asset Tag
+          <input id="propertyNumber" type="text" placeholder="NIA property number / tag" />
+        </label>
+        <label class="span-2">
+          Project Source / Where It Came From <span class="required">*</span>
+          <input id="projectSource" type="text" required placeholder="e.g., Supply and Delivery of CCTV Upgrade, CY 2026" />
+        </label>
+        <label>
+          Acquisition / Delivery Date
+          <input id="acquisitionDate" type="date" />
+        </label>
+        <label>
+          Location / Station
+          <input id="location" type="text" placeholder="e.g., FFIS Command Center, Magat Dam, Halong RG" />
+        </label>
+        <label>
+          Assigned Personnel / Custodian
+          <input id="custodian" type="text" placeholder="Name or unit custodian" />
+        </label>
+        <label>
+          Status
+          <select id="status">
+            <option>Operational</option>
+            <option>Standby</option>
+            <option>For Repair</option>
+            <option>For Calibration</option>
+            <option>Missing</option>
+            <option>Retired</option>
+          </select>
+        </label>
+        <label>
+          Last PM / Inspection Date
+          <input id="lastPmDate" type="date" />
+        </label>
+        <label>
+          Next PM / Inspection Date
+          <input id="nextPmDate" type="date" />
+        </label>
+        <label class="span-2">
+          Description <span class="required">*</span>
+          <textarea id="description" required rows="3" placeholder="Brief equipment description, capacity, main function, accessories included..."></textarea>
+        </label>
+        <label class="span-2">
+          Remarks / Findings
+          <textarea id="remarks" rows="3" placeholder="Condition, defects, missing accessories, calibration notes, transfer history..."></textarea>
+        </label>
+      </div>
+
+      <div class="photo-panel">
+        <div>
+          <label for="photoInput" class="photo-label">Equipment Picture</label>
+          <input id="photoInput" type="file" accept="image/*" />
+          <p class="help-text">Photo is compressed before saving to reduce file size.</p>
+        </div>
+        <div class="photo-preview-wrap">
+          <img id="photoPreview" alt="Equipment preview" />
+          <button type="button" id="btnRemovePhoto" class="btn ghost">Remove Photo</button>
+        </div>
+      </div>
+
+      <div id="duplicateWarning" class="duplicate-warning" hidden></div>
+
+      <div class="modal-actions">
+        <button type="button" id="btnCancel" class="btn ghost">Cancel</button>
+        <button type="submit" class="btn primary">Save Record</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="imageDialog" class="image-modal">
+    <button type="button" id="btnCloseImage" class="icon-btn image-close" aria-label="Close image">×</button>
+    <img id="largeImage" alt="Equipment photo" />
+  </dialog>
+
+  <footer class="footer no-print">
+    <p>ECMU Equipment Inventory System • Netlify-ready static web app • Backup regularly using JSON export.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
